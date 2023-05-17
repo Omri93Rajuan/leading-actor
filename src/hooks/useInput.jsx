@@ -34,7 +34,7 @@ export const useInput = () => {
       document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('keyup', handleKeyUp)
     }
-  },[])
+  })
   
   const findKey = (key) => keys[key]
 
