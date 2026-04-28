@@ -4,6 +4,14 @@ import Game from './Game'
 import { Physics } from '@react-three/cannon'
 import { Suspense, useEffect, useState } from 'react'
 
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
+const CAMERA_SETTINGS = { fov: 45, near: 0.1, far: 70 }
+const GL_SETTINGS = { antialias: true, powerPreference: 'high-performance' }
+
+function handleCanvasPointerDown(event) {
+  event.target.requestPointerLock?.()
+}
+
 function Loader() {
   return (
     <div className="loader" role="status" aria-live="polite">
@@ -62,20 +70,37 @@ export default function App() {
     return () => document.removeEventListener('pointerlockchange', handlePointerLockChange)
   }, [])
 
-  const handleCanvasPointerDown = (event) => {
-    event.target.requestPointerLock?.()
-  }
-
   return (
     <main className="app-shell">
       <Suspense fallback={<Loader />}>
-        <Canvas className="scene-canvas" shadows onPointerDown={handleCanvasPointerDown}>
-          <spotLight position={[2.5, 5, 5]} angle={Math.PI / 3} penumbra={0.5} castShadow shadow-mapSize-height={2048} shadow-mapSize-width={2048} />
-          <spotLight position={[-2.5, 5, 5]} angle={Math.PI / 3} penumbra={0.5} castShadow shadow-mapSize-height={2048} shadow-mapSize-width={2048} />
-          <Physics>
+        <Canvas
+          className="scene-canvas"
+          camera={CAMERA_SETTINGS}
+          dpr={[1, 1.5]}
+          gl={GL_SETTINGS}
+          shadows
+          onPointerDown={handleCanvasPointerDown}
+        >
+          <color attach="background" args={['#07090f']} />
+          <fog attach="fog" args={['#07090f', 18, 42]} />
+          <hemisphereLight args={['#d6f3ff', '#6f5c3d', 0.9]} />
+          <directionalLight
+            castShadow
+            position={[4, 8, 6]}
+            intensity={2.1}
+            shadow-camera-bottom={-16}
+            shadow-camera-far={32}
+            shadow-camera-left={-16}
+            shadow-camera-near={1}
+            shadow-camera-right={16}
+            shadow-camera-top={16}
+            shadow-mapSize-height={1024}
+            shadow-mapSize-width={1024}
+          />
+          <Physics allowSleep broadphase="SAP" gravity={[0, -9.81, 0]}>
             <Game />
           </Physics>
-          <Stats />
+          {IS_DEVELOPMENT && <Stats />}
         </Canvas>
         <SceneHud isLocked={isLocked} />
       </Suspense>
