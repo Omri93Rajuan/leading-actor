@@ -9,7 +9,7 @@ const CAMERA_SETTINGS = { fov: 45, near: 0.1, far: 70 }
 const GL_SETTINGS = { antialias: true, powerPreference: 'high-performance' }
 
 function handleCanvasPointerDown(event) {
-  event.target.requestPointerLock?.()
+  event.currentTarget.requestPointerLock?.()
 }
 
 function Loader() {
@@ -97,7 +97,7 @@ export default function App() {
             shadow-mapSize-height={1024}
             shadow-mapSize-width={1024}
           />
-          <Physics allowSleep broadphase="SAP" gravity={[0, -9.81, 0]}>
+          <Physics broadphase="SAP" gravity={[0, -9.81, 0]}>
             <Game />
           </Physics>
           {IS_DEVELOPMENT && <Stats />}
