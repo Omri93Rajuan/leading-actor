@@ -2,6 +2,16 @@ import { useThree } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import { Object3D } from 'three'
 
+const MOUSE_SENSITIVITY = 0.002
+const MIN_CAMERA_ZOOM = 0.5
+const MAX_CAMERA_ZOOM = 4
+const MIN_CAMERA_TILT = -1
+const MAX_CAMERA_TILT = 0.4
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
 export default function useFollowCam() {
   const { scene, camera } = useThree()
 
@@ -12,42 +22,52 @@ export default function useFollowCam() {
     return o
   }, [])
 
-  const onDocumentMouseMove = (e) => {
-    if (document.pointerLockElement) {
-      pivot.rotation.y -= e.movementX * 0.002
-      const v = followCam.rotation.x - e.movementY * 0.002
-      if (v >= -1.0 && v <= 0.4) {
-        followCam.rotation.x = v
-        followCam.position.y = -v * followCam.position.z + 1
-      }
-    }
-    return false
-  }
-
-  const onDocumentMouseWheel = (e) => {
-    if (document.pointerLockElement) {
-      const v = followCam.position.z + e.deltaY * 0.002
-      if (v >= 0.5 && v <= 4) {
-        followCam.position.z = v
-      }
-    }
-    return false
-  }
-
   useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!document.pointerLockElement) {
+        return
+      }
+
+      pivot.rotation.y -= e.movementX * MOUSE_SENSITIVITY
+
+      const nextTilt = clamp(
+        followCam.rotation.x - e.movementY * MOUSE_SENSITIVITY,
+        MIN_CAMERA_TILT,
+        MAX_CAMERA_TILT
+      )
+
+      followCam.rotation.x = nextTilt
+      followCam.position.y = -nextTilt * followCam.position.z + 1
+    }
+
+    const handleWheel = (e) => {
+      if (!document.pointerLockElement) {
+        return
+      }
+
+      followCam.position.z = clamp(
+        followCam.position.z + e.deltaY * MOUSE_SENSITIVITY,
+        MIN_CAMERA_ZOOM,
+        MAX_CAMERA_ZOOM
+      )
+    }
+
     camera.position.set(0, 0, 0)
     followCam.add(camera)
     pivot.add(followCam)
     scene.add(pivot)
-    //console.log('attach followCam listeners')
-    document.addEventListener('mousemove', onDocumentMouseMove)
-    document.addEventListener('mousewheel', onDocumentMouseWheel)
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('wheel', handleWheel, { passive: true })
+
     return () => {
-      //console.log('remove followCam listeners')
-      document.removeEventListener('mousemove', onDocumentMouseMove)
-      document.removeEventListener('mousewheel', onDocumentMouseWheel)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('wheel', handleWheel)
+      followCam.remove(camera)
+      pivot.remove(followCam)
+      scene.remove(pivot)
     }
-  })
+  }, [camera, followCam, pivot, scene])
 
   return { pivot }
 }
