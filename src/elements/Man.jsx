@@ -7,6 +7,11 @@ import useFollowCam from '../hooks/useFollowCam';
 import { useInput } from '../hooks/useInput';
 import { useAnimations, useGLTF } from '@react-three/drei';
 
+const WALK_SPEED = 4;
+const RUN_SPEED = 8;
+const JUMP_SPEED = 5.5;
+const ROTATION_SPEED = 10;
+
 export default function Model(props) {
   const { forward, backward, left, right, shift, jump } = useInput();
   const group = useRef();
@@ -22,7 +27,10 @@ export default function Model(props) {
   const quat = useMemo(() => new Quaternion(), []);
   const targetQuaternion = useMemo(() => new Quaternion(), []);
   const worldPosition = useMemo(() => new Vector3(), []);
+  const rotationMatrix = useMemo(() => new Matrix4(), []);
   const contactNormal = useMemo(() => new Vec3(0, 0, 0), []);
+  const upAxis = useMemo(() => new Vec3(0, 1, 0), []);
+  const currentVelocity = useRef([0, 0, 0]);
 
   const currentRef = useRef("");
   const [ref, body] = useCompoundBody(
@@ -38,25 +46,37 @@ export default function Model(props) {
         } else {
           contactNormal.set(...e.contact.ni);
         }
+
+        if (contactNormal.dot(upAxis) > 0.5) {
+          canJump.current = true;
+        }
       },
       ...props
     }),
     useRef()
   );
 
-  useFrame((_, delta) => {
+  useEffect(() => {
     body.angularFactor.set(0, 0, 0);
+    return body.velocity.subscribe((value) => {
+      currentVelocity.current = value;
+    });
+  }, [body]);
+
+  useFrame((_, delta) => {
+    if (!ref.current || !group.current) {
+      return;
+    }
 
     ref.current.getWorldPosition(worldPosition);
 
-    const rotationMatrix = new Matrix4();
     rotationMatrix.lookAt(worldPosition, group.current.position, group.current.up);
     targetQuaternion.setFromRotationMatrix(rotationMatrix);
 
     if (!group.current.quaternion.equals(targetQuaternion)) {
       targetQuaternion.z = 0;
       targetQuaternion.x = 0;
-      group.current.quaternion.rotateTowards(targetQuaternion, delta * 10);
+      group.current.quaternion.rotateTowards(targetQuaternion, delta * ROTATION_SPEED);
     } else {
       group.current.quaternion.copy(targetQuaternion);
     }
@@ -64,72 +84,79 @@ export default function Model(props) {
     if (document.pointerLockElement) {
       inputVelocity.set(0, 0, 0);
       if (forward) {
-        shift ? inputVelocity.z += -60 * delta :inputVelocity.z += -20 * delta;
+        inputVelocity.z -= 1;
       }
       if (backward) {
-        shift ? inputVelocity.z += 60 * delta : inputVelocity.z += 20 * delta;
+        inputVelocity.z += 1;
       }
       if (left) {
-        shift ? inputVelocity.x += -60 * delta : inputVelocity.x += -20 * delta;
+        inputVelocity.x -= 1;
       }
       if (right) {
-        shift ? inputVelocity.x += 60 * delta : inputVelocity.x +=  20 * delta;
-        }
-        if (jump && canJump.current) {
-          canJump.current = false;
-          inputVelocity.y += 10;
-        }
-        euler.y = pivot.rotation.y;
-        euler.order = 'XYZ';
-        quat.setFromEuler(euler);
-        inputVelocity.applyQuaternion(quat);
-        velocity.set(inputVelocity.x, inputVelocity.y, inputVelocity.z);
-        body.velocity.set(velocity.x, velocity.y, velocity.z);
+        inputVelocity.x += 1;
       }
-  
-      group.current.position.lerp(worldPosition, 0.1);
-      pivot.position.lerp(worldPosition, 0.2);
-    });
-  
-    useEffect(() => {
-      let action = "";
-      if (forward || backward || left || right) {
-        action = "Walking";
-        if (shift) action = "Running";
-      } else if (jump) {
-        action = "Jumping";
+
+      if (inputVelocity.lengthSq() > 0) {
+        inputVelocity.normalize().multiplyScalar(shift ? RUN_SPEED : WALK_SPEED);
+      }
+
+      if (jump && canJump.current) {
+        canJump.current = false;
+        inputVelocity.y = JUMP_SPEED;
       } else {
-        action = "Idle";
+        inputVelocity.y = currentVelocity.current[1];
       }
-  
-      if (currentRef.current !== action) {
-        const nextAction = actions[action];
-        const current = actions[currentRef.current];
-        current?.fadeOut(0.5);
-        nextAction?.reset().fadeIn(0.2).play();
-        currentRef.current = action;
-      }
-    }, [forward, backward, left, right, shift, jump, actions]);
-  
-    return (
-      <>
-        <group ref={group} {...props} dispose={null}>
-          <group name="Scene">
-            <group name="Armature005" position={[0.01, -0.01, 0]} scale={0.01}>
-              <primitive object={nodes.mixamorig6Hips} />
-              <skinnedMesh
-                castShadow
-                name="Ch09"
-                geometry={nodes.Ch09.geometry}
-                material={materials.Ch09_body}
-                skeleton={nodes.Ch09.skeleton}
-              />
-            </group>
+
+      euler.y = pivot.rotation.y;
+      euler.order = 'XYZ';
+      quat.setFromEuler(euler);
+      inputVelocity.applyQuaternion(quat);
+      velocity.set(inputVelocity.x, inputVelocity.y, inputVelocity.z);
+      body.velocity.set(velocity.x, velocity.y, velocity.z);
+    }
+
+    group.current.position.lerp(worldPosition, 0.1);
+    pivot.position.lerp(worldPosition, 0.2);
+  });
+
+  useEffect(() => {
+    let action = "";
+    if (forward || backward || left || right) {
+      action = "Walking";
+      if (shift) action = "Running";
+    } else if (jump) {
+      action = "Jumping";
+    } else {
+      action = "Idle";
+    }
+
+    if (currentRef.current !== action) {
+      const nextAction = actions[action];
+      const current = actions[currentRef.current];
+      current?.fadeOut(0.5);
+      nextAction?.reset().fadeIn(0.2).play();
+      currentRef.current = action;
+    }
+  }, [forward, backward, left, right, shift, jump, actions]);
+
+  return (
+    <>
+      <group ref={group} {...props} dispose={null}>
+        <group name="Scene">
+          <group name="Armature005" position={[0.01, -0.01, 0]} scale={0.01}>
+            <primitive object={nodes.mixamorig6Hips} />
+            <skinnedMesh
+              castShadow
+              name="Ch09"
+              geometry={nodes.Ch09.geometry}
+              material={materials.Ch09_body}
+              skeleton={nodes.Ch09.skeleton}
+            />
           </group>
         </group>
-      </>
-    );
-  }
-  
-  useGLTF.preload("models/kid.glb");
-  
+      </group>
+    </>
+  );
+}
+
+useGLTF.preload("models/kid.glb");
