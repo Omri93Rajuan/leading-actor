@@ -63,7 +63,7 @@ export default function App() {
   }, [])
 
   const handleCanvasPointerDown = (event) => {
-    event.target.requestPointerLock?.()
+    event.currentTarget.requestPointerLock?.()
   }
 
   return (
