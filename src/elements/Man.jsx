@@ -35,6 +35,7 @@ export default function Model(props) {
   const currentRef = useRef("");
   const [ref, body] = useCompoundBody(
     () => ({
+      allowSleep: false,
       mass: 1,
       shapes: [
         { args: [0.5], position: [0, 0.5, 0], type: 'Sphere' },
@@ -83,6 +84,7 @@ export default function Model(props) {
 
     if (document.pointerLockElement) {
       inputVelocity.set(0, 0, 0);
+      const hasMoveInput = forward || backward || left || right;
       if (forward) {
         inputVelocity.z -= 1;
       }
@@ -100,18 +102,23 @@ export default function Model(props) {
         inputVelocity.normalize().multiplyScalar(shift ? RUN_SPEED : WALK_SPEED);
       }
 
-      if (jump && canJump.current) {
+      const shouldJump = jump && canJump.current;
+      const yVelocity = shouldJump ? JUMP_SPEED : currentVelocity.current[1];
+
+      if (shouldJump) {
         canJump.current = false;
-        inputVelocity.y = JUMP_SPEED;
-      } else {
-        inputVelocity.y = currentVelocity.current[1];
       }
 
       euler.y = pivot.rotation.y;
       euler.order = 'XYZ';
       quat.setFromEuler(euler);
       inputVelocity.applyQuaternion(quat);
-      velocity.set(inputVelocity.x, inputVelocity.y, inputVelocity.z);
+
+      if (hasMoveInput || shouldJump) {
+        body.wakeUp();
+      }
+
+      velocity.set(inputVelocity.x, yVelocity, inputVelocity.z);
       body.velocity.set(velocity.x, velocity.y, velocity.z);
     }
 
