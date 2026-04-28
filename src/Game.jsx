@@ -3,11 +3,19 @@ import Floor from './elements/Floor'
 import Man from './elements/Man'
 import Trees from './elements/Trees'
 import CV from './elements/CV'
+import Logs from './elements/Logs'
+import Sun from './elements/Sun'
 
 export default function Game() {
   useContactMaterial('ground', 'slippery', {
     friction: 0,
     restitution: 0.3,
+    contactEquationStiffness: 1e8,
+    contactEquationRelaxation: 3
+  })
+  useContactMaterial('solid', 'slippery', {
+    friction: 0.35,
+    restitution: 0.05,
     contactEquationStiffness: 1e8,
     contactEquationRelaxation: 3
   })
@@ -17,7 +25,9 @@ export default function Game() {
       <Floor rotation={[-Math.PI / 2, 0, 0]} material={'ground'} />
       <Man position={[0, 1, 0]} linearDamping={0.95} material={'slippery'} />
       <Trees />
+      <Logs />
       <CV />
+      <Sun />
     </>
   )
 }
