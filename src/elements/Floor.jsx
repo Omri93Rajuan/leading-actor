@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { usePlane } from '@react-three/cannon'
 import { CanvasTexture, RepeatWrapping } from 'three'
 
-const FLOOR_SIZE = 44
+const FLOOR_SIZE = 56
 
 function seededRandom() {
   let seed = 42
@@ -48,7 +48,7 @@ function createGroundTexture() {
   const texture = new CanvasTexture(canvas)
   texture.wrapS = RepeatWrapping
   texture.wrapT = RepeatWrapping
-  texture.repeat.set(9, 9)
+  texture.repeat.set(11, 11)
   texture.anisotropy = 4
 
   return texture

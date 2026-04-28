@@ -48,7 +48,8 @@ a {
 .hud,
 .control-strip,
 .credit,
-.loader {
+.loader,
+.reticle {
   position: absolute;
   z-index: 2;
 }
@@ -76,7 +77,7 @@ a {
 .hud h1 {
   margin: 0;
   color: #ffffff;
-  font-size: clamp(2rem, 6vh, 4.5rem);
+  font-size: clamp(2rem, 5.4vh, 4rem);
   font-weight: 800;
   line-height: 0.95;
   text-shadow: 0 12px 30px rgba(0, 0, 0, 0.36);
@@ -152,6 +153,31 @@ a {
 .credit:focus-visible,
 .credit:hover {
   color: #ffffff;
+}
+
+.reticle {
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: opacity 160ms ease;
+}
+
+.reticle::after {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  content: "";
+}
+
+.reticle--active {
+  opacity: 1;
 }
 
 .loader {

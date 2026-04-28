@@ -3,10 +3,12 @@ import { useEffect, useMemo } from 'react'
 import { Object3D } from 'three'
 
 const MOUSE_SENSITIVITY = 0.002
-const MIN_CAMERA_ZOOM = 0.5
-const MAX_CAMERA_ZOOM = 4
-const MIN_CAMERA_TILT = -1
-const MAX_CAMERA_TILT = 0.4
+const MIN_CAMERA_ZOOM = 1.45
+const MAX_CAMERA_ZOOM = 6.2
+const MIN_CAMERA_TILT = -0.72
+const MAX_CAMERA_TILT = 0.36
+const DEFAULT_CAMERA_TILT = -0.18
+const CAMERA_HEIGHT = 1.25
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
@@ -18,7 +20,8 @@ export default function useFollowCam() {
   const pivot = useMemo(() => new Object3D(), [])
   const followCam = useMemo(() => {
     const o = new Object3D()
-    o.position.set(0, 1, 1.5)
+    o.rotation.x = DEFAULT_CAMERA_TILT
+    o.position.set(0, -DEFAULT_CAMERA_TILT * 3.25 + CAMERA_HEIGHT, 3.25)
     return o
   }, [])
 
@@ -37,7 +40,7 @@ export default function useFollowCam() {
       )
 
       followCam.rotation.x = nextTilt
-      followCam.position.y = -nextTilt * followCam.position.z + 1
+      followCam.position.y = -nextTilt * followCam.position.z + CAMERA_HEIGHT
     }
 
     const handleWheel = (e) => {
@@ -50,9 +53,11 @@ export default function useFollowCam() {
         MIN_CAMERA_ZOOM,
         MAX_CAMERA_ZOOM
       )
+      followCam.position.y = -followCam.rotation.x * followCam.position.z + CAMERA_HEIGHT
     }
 
     camera.position.set(0, 0, 0)
+    camera.rotation.set(0, 0, 0)
     followCam.add(camera)
     pivot.add(followCam)
     scene.add(pivot)

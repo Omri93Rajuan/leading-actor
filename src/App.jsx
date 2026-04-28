@@ -1,12 +1,10 @@
 import { Canvas } from '@react-three/fiber'
-import { Stats } from '@react-three/drei'
 import Game from './Game'
 import { Physics } from '@react-three/cannon'
 import { Suspense, useEffect, useState } from 'react'
 
-const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 const CAMERA_SETTINGS = { fov: 45, near: 0.1, far: 70 }
-const GL_SETTINGS = { antialias: true, powerPreference: 'high-performance' }
+const GL_SETTINGS = { antialias: true, powerPreference: 'high-performance', stencil: false }
 
 function handleCanvasPointerDown(event) {
   event.currentTarget.requestPointerLock?.()
@@ -26,11 +24,11 @@ function SceneHud({ isLocked }) {
     <>
       <header className="hud">
         <div>
-          <p className="hud__eyebrow">Interactive portfolio</p>
-          <h1>Leading Actor</h1>
+          <p className="hud__eyebrow">Reactive playground</p>
+          <h1>Kid World</h1>
         </div>
         <div className={`hud__status ${isLocked ? 'hud__status--active' : ''}`}>
-          {isLocked ? 'Exploring' : 'Click scene to enter'}
+          {isLocked ? 'Playing' : 'Click to play'}
         </div>
       </header>
 
@@ -56,6 +54,7 @@ function SceneHud({ isLocked }) {
       <a className="credit" href="https://www.mixamo.com" target="_blank" rel="nofollow noreferrer">
         Character model: Mixamo
       </a>
+      <div className={`reticle ${isLocked ? 'reticle--active' : ''}`} aria-hidden="true" />
     </>
   )
 }
@@ -76,7 +75,7 @@ export default function App() {
         <Canvas
           className="scene-canvas"
           camera={CAMERA_SETTINGS}
-          dpr={[1, 1.5]}
+          dpr={[1, 1.25]}
           gl={GL_SETTINGS}
           shadows
           onPointerDown={handleCanvasPointerDown}
@@ -87,20 +86,19 @@ export default function App() {
           <directionalLight
             castShadow
             position={[4, 8, 6]}
-            intensity={2.1}
-            shadow-camera-bottom={-16}
-            shadow-camera-far={32}
-            shadow-camera-left={-16}
+            intensity={2.25}
+            shadow-camera-bottom={-20}
+            shadow-camera-far={42}
+            shadow-camera-left={-20}
             shadow-camera-near={1}
-            shadow-camera-right={16}
-            shadow-camera-top={16}
-            shadow-mapSize-height={1024}
-            shadow-mapSize-width={1024}
+            shadow-camera-right={20}
+            shadow-camera-top={20}
+            shadow-mapSize-height={512}
+            shadow-mapSize-width={512}
           />
-          <Physics broadphase="SAP" gravity={[0, -9.81, 0]}>
+          <Physics broadphase="SAP" gravity={[0, -9.81, 0]} iterations={12} maxSubSteps={4}>
             <Game />
           </Physics>
-          {IS_DEVELOPMENT && <Stats />}
         </Canvas>
         <SceneHud isLocked={isLocked} />
       </Suspense>
